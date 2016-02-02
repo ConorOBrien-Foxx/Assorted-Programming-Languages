@@ -54,7 +54,7 @@ for ex in to_parse:
 		compiled += "\t" * tab_level + "return "
 	elif ex.lower().startswith("next"):
 		compiled += "\n" + "\t" * tab_level
-	elif ex.lower().startswith("backtracking"):
+	elif ex.lower().startswith("backtracking") or ex.lower().startswith("Take a step back"):
 		tab_level -= 1
 	elif ex.lower().startswith("invoke"):
 		compiled += cleanse(space_ex[1]) + "(" + cleanse(",".join(space_ex[3:]).replace("number","eval(input)")).replace("input","input(\"~>\")") + ")"
