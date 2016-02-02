@@ -54,7 +54,7 @@ for ex in to_parse:
 		compiled += "\t" * tab_level + "return "
 	elif ex.lower().startswith("next"):
 		compiled += "\n" + "\t" * tab_level
-	elif ex.lower().startswith("backtracking") or ex.lower().startswith("Take a step back"):
+	elif ex.lower().startswith("backtracking") or ex.lower().startswith("take a step back"):
 		tab_level -= 1
 	elif ex.lower().startswith("invoke"):
 		compiled += cleanse(space_ex[1]) + "(" + cleanse(",".join(space_ex[3:]).replace("number","eval(input)")).replace("input","input(\"~>\")") + ")"
@@ -62,7 +62,7 @@ for ex in to_parse:
 		compiled += "\""+cleanse(" ".join(space_ex[1:])).replace("\"","\\\"")+"\""
 	elif ex.lower().startswith("listen"):
 		compiled += "\t" * tab_level + "print("
-	elif ex.lower().startswith("that's the point") or ex.lower().startswith("that's it."):
+	elif ex.lower().startswith("that's the point") or ex.lower().startswith("that's it"):
 		compiled += ")\n"
 	elif ex.lower().startswith("literally, "):
 		compiled += cleanse(ex[11:])+" "
@@ -83,7 +83,7 @@ for ex in to_parse:
 	if ex.lower().startswith("breathe"):
 		breath = MAX_BREATH
 		deep_breaths = 0 if deep_breaths <= 0 else deep_breaths - 1
-	elif ex.lower().startswith("inahle"):
+	elif ex.lower().startswith("inhale"):
 		breath = 2*MAX_BREATH
 		if deep_breaths > 2:
 			print("HyperventilationError: The program lost the will to continue on line %s." % line)
