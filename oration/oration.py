@@ -27,7 +27,8 @@ for line in file:
 	line = re.sub(filler,"",line)
 	to_parse += re.split(r"(<=[!.?:]) ",line.replace("\n",""))
 
-breath       = 10
+MAX_BREATH   = 7
+breath       = 7
 deep_breaths = 0
 compiled     = ""
 tab_level    = 0
@@ -80,10 +81,10 @@ for ex in to_parse:
 	
 	# controlling breathing
 	if ex.lower().startswith("breathe"):
-		breath = 10
+		breath = MAX_BREATH
 		deep_breaths = 0 if deep_breaths <= 0 else deep_breaths - 1
 	elif ex.lower().startswith("inahle"):
-		breath = 20
+		breath = 2*MAX_BREATH
 		if deep_breaths > 2:
 			print("HyperventilationError: The program lost the will to continue on line %s." % line)
 		deep_breaths += 1
