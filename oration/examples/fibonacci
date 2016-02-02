@@ -1,0 +1,14 @@
+Start a function fib with n.
+Breathe.
+If n < 2...
+Return n.
+Breathe.
+Backtracking.
+Here:
+Literally, fib(n-2) + fib(n-1).
+Breathe.
+I'm done.
+Listen.
+Breathe.
+Invoke fib with number.
+That's it.
