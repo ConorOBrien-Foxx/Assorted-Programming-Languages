@@ -4,7 +4,7 @@ to_parse = []
 filler = re.compile(r"\s+(?:um+|alrighty?|sh(?:oo|i)t)\s?(?:[,:]?|(?:[!.?])+)\s*")
 
 def cleanse(string):
-	return re.sub(r"([!.?]|\.\.\.)$","",string)
+	return re.sub(r"([!.?`]|\.\.\.)$","",string)
 
 def fix_parens(string):
 	level = 0
@@ -41,6 +41,7 @@ for ex in to_parse:
 		print("BreathError: The program suffocated on line %s." % line)
 		sys.exit()
 	if not commented:
+		deduct_breath = True
 		if ex.lower().startswith("we need ") or ex.lower().startswith("i need ") or ex.lower().startswith("you need "):
 			compiled += "import " + ex[8:-1] + "\n"
 		elif ex.lower().startswith("start a "):
@@ -81,6 +82,8 @@ for ex in to_parse:
 			compiled += ")"
 		elif ex.lower().startswith("don't listen to me") or ex.lower().startswith("shush"):
 			commented = True
+		else:
+			deduct_breath = False
 		
 		# controlling breathing
 		if ex.lower().startswith("breathe"):
@@ -91,8 +94,9 @@ for ex in to_parse:
 			if deep_breaths > 2:
 				print("HyperventilationError: The program lost the will to continue on line %s." % line)
 			deep_breaths += 1
-		else:
+		elif deduct_breath:
 			breath -= len(space_ex)
+		
 		line += 1
 	elif ex.lower().startswith("hear me out now") or ex.lower().startswith("sorry"):
 		commented = False
