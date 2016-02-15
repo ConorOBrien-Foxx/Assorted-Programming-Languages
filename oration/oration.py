@@ -31,6 +31,7 @@ MAX_BREATH   = 7
 breath       = 7
 deep_breaths = 0
 compiled     = ""
+module       = ""
 tab_level    = 0
 line         = 0
 commented    = False
@@ -43,7 +44,16 @@ for ex in to_parse:
 	if not commented:
 		deduct_breath = True
 		if ex.lower().startswith("we need ") or ex.lower().startswith("i need ") or ex.lower().startswith("you need "):
-			compiled += "import " + ex[8:-1] + "\n"
+			module = ex[7:-1]
+			compiled += "import " + module + "\n"
+		elif ex.lower().startswith("to iterate, "):
+			compiled += "while " + ex[12:-1] + ":\n"
+			tab_level += 1
+			compiled += "\t" * tab_level
+		elif ex.lower().startswith("now"):
+			compiled += module + "." + ex[4:-1] + "\n"
+		elif ex.lower().startswith("chop"):
+			compiled = compiled[:int(-1*len(ex.lower())/5)]
 		elif ex.lower().startswith("start a "):
 			key_word = space_ex[2]
 			if key_word == "function":
@@ -62,6 +72,8 @@ for ex in to_parse:
 			compiled += cleanse(space_ex[1]) + "(" + cleanse(",".join(space_ex[3:]).replace("number","eval(input)")).replace("input","input(\"~>\")") + ")"
 		elif ex.lower().startswith("capture"):
 			compiled += "\""+cleanse(" ".join(space_ex[1:])).replace("\"","\\\"")+"\""
+		elif ex.lower().startswith("boring"):
+			compiled += "print(\"\\n\")\n"
 		elif ex.lower().startswith("listen"):
 			compiled += "\t" * tab_level + "print("
 		elif ex.lower().startswith("that's the point") or ex.lower().startswith("that's it"):
