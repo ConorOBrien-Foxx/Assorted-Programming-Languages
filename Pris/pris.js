@@ -1,3 +1,10 @@
+function numOf(str){
+  for(var i=s=0;i<str.length;i++){
+    s = str[i]==="]"?s*2+1:str[i]==="["?s*2-1:s+1;
+  }
+  return s;
+}
+
 function Pris(code){
   code = code.match(/([)}{(])(\1|[[\]])*/g);
   var arr = [0,0], focus = 0, out = "";
