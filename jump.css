@@ -1,0 +1,38 @@
+html, pre, textarea {
+	font-family: "Consolas", monospace;
+}
+
+pre {
+	/*line-height: 1.16em;*/
+	/*line-height: 1em;*/
+	min-height: 6em;
+	font-size: 38px;
+	width: auto;
+	/*background: #dedede;*/
+	background: black;
+	padding: 15px;
+	/*transform: scaleY(0.8);*/
+}
+
+.player {
+	color: #3a7;
+}
+
+.cell {
+	color: white;
+}
+
+textarea {
+	width: 500px;
+	border: 1px solid #8f8f8f;
+	padding: 5px;
+	font-size: 18px;
+	border-radius: 5px;
+}
+
+#capture {
+	opacity: 0;
+	position: fixed;
+	right:0;
+	top: 0;
+}
