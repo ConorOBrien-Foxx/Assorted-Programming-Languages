@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Reng</title>
+  <style>@import url(https://fonts.googleapis.com/css?family=Cousine:400,400italic,700,700italic);@import url(https://fonts.googleapis.com/css?family=Open+Sans:400,300,300italic,400italic,700,700italic);html,button,input{font-family:"Open Sans",sans-serif;}table{border-collapse:collapse;}td{width:1em;height:1em;border:1px solid #888;padding:5px;text-align:center;}td.cur{background:#edaaaa;}textarea,#o{width:100%;min-height:6em;}#int{width:6ch;}td,textarea,#stack,#o{font-family:"Cousine",monospace;white-space:pre;}h1,h2{margin:0;}</style>
+</head>
+<body>
+<h1>Reng v.2.1</h1>
+<h2>input</h2>
+<textarea spellcheck="false" id="input"></textarea>
+<button id=f>feed input</button>
+<h2>code</h2>
+<textarea spellcheck="false" id="code">
+</textarea>
+<button id=s>set code</button><button id=b>step</button><button id=r>run</button>(<input id=int value=500>ms delay)<button id=q>stop</button>
+<div id="dispTable"></div>
+<div id="stack"></div>
+<hr>
+<h2>output</h2>
+<div id=o></div>
+<hr>
+<h2>Previous versions</h2>
+<ul>
+<li>v.current - You're right here.</li>
+<li>v.1 - <a target="_parent" href="https://jsfiddle.net/Conor_OBrien/avnLdwtq/9/">link</a>
+  <ul>
+    <li>v.1.1 - <a target="_parent" href="https://jsfiddle.net/Conor_OBrien/avnLdwtq/10/">link</a></li>
+    <li>v.1.2 - <a target="_parent" href="https://jsfiddle.net/Conor_OBrien/avnLdwtq/15/">link</a></li>
+    <li>v.1.3 - <a target="_parent" href="https://jsfiddle.net/Conor_OBrien/avnLdwtq/17/">link</a></li>
+  </ul>
+</li>
+<li>v.2 - <a target="_parent" href="https://jsfiddle.net/Conor_OBrien/avnLdwtq/18/">link</a><ul>
+<li>v.2.1 - <a target="_parent" href="https://jsfiddle.net/Conor_OBrien/avnLdwtq/20/">link</a></li>
+</ul></li>
+</ul>
+<script>
+/*
+
+#x	push a token char x
+=	pop a value N and a token X and sets X to N (redefine)
+(...)	push a code block ... to the stack
+0...Z	push 0...36
++-*%.	ops ifu (% division, . modulu)
+a	print all of stack
+e	value equality
+g	greater than
+l	less than
+p	print
+~	switch top two
+$	drop
+:	dup
+?	pop N, skip the next char if N is 1
+<>^v	directional pointers
+|/\	mirrors
+
+*/
+
+function Reng(code){
+  this.code = code.split("\n").map(function(e){return e.split("");});
+  this.input = [];
+  this.input.shift = function(){
+  	var a = this[0];
+    if(typeof a!=="undefined"){
+    	this.splice(0,1);
+      return a;
+    } else return -1;
+  }
+  this.pos = {x:0,y:0};
+  this.dir = {x:1,y:0};
+  this.depth = 1;
+  this.mode = 1;
+  this.ops = {};
+  for(i in Reng.ops){
+  	this.ops[i] = Reng.ops[i];
+  }
+  this.funcs = {
+    	"RAND":function(R){R.stack.push(Math.random())},
+      "TIME":function(R){R.stack.push(+new Date())},
+      "RANGE":function(R){var b = R.stack.pop(), a = R.stack.pop();
+        while(--b) R.stack.push(a++);},
+  }
+  this.running = true;
+  this.buildFunc = "";
+  this.parentStacks = [];
+  this.stack = [];      // ugh another stack ;_;
+  // popping off of empty stack yields 0
+  this.stack.pop = function(){
+  	var val = this[this.length-1];
+    if(typeof val==="undefined") val = 0;
+    else this.splice(-1,1);
+    return val;
+  }
+  this.maxLen = this.code.reduce(function(x,y){return Math.max(y.length,x);},"");
+  this.code = this.code.map(function(e){while(e.length<this.maxLen)e.push(" ");return e;}.bind(this));
+}
+Reng.dirChange = function(nx,ny){return function(R){R.dir={x:nx,y:ny}}}
+Reng.nullary = function(f){return function(R){R.stack.push(f(R));}}
+Reng.nullaryC = function(f){return function(R){R.stack=R.stack.concat(f(R,R.stack.pop()));}}
+Reng.dropUse = function(f){return function(R){(f||function(){})(R,R.stack.pop());}}
+Reng.unary = function(f,g){
+	return function(R){
+  	var val = R.stack.pop();
+  	R.stack.push((val instanceof Reng.lambda?g:f)(R,val));
+  }
+}
+Reng.binary = function(f,g){return function(R){var top=R.stack.pop(),sec=R.stack.pop();R.stack.push(f(R,sec,top));}}
+Reng.ternary = function(f,g){return function(R){var top=R.stack.pop(),sec=R.stack.pop(),thi=R.stack.pop();R.stack.push(f(R,sec,top,thi));}}
+Reng.constant = function(v){return function(R){R.stack.push(v);}}
+Reng.mode = function(m){return function(R){R.mode=m;}}
+Reng.lambda = function(code){
+	this.body = code;
+}
+Reng.lambda.prototype.toString = function(){
+	return "{" + this.body + "}";
+}
+Reng.lambda.prototype.exec = function(R){
+	for(var i=0;i<this.body.length;i++){
+  	R.exec(this.body[i]);
+    if(!R.running) break;
+  }
+}
+Reng.ops = {
+	// directional pointers
+  ">":Reng.dirChange(1,0),
+  "<":Reng.dirChange(-1,0),
+  "^":Reng.dirChange(0,-1),
+  "v":Reng.dirChange(0,1),
+  // mirrors
+  "\\":function(R){R.dir={x:R.dir.y,y:R.dir.x};},
+  "/":function(R){R.dir={x:-R.dir.y,y:-R.dir.x};},
+  "|":function(R){R.dir.x=-R.dir.x},
+  "_":function(R){R.dir.y=-R.dir.y},
+  "@":function(R){R.dir.x=-R.dir.x;R.dir.y=-R.dir.y;},
+  // unconditional jump
+  "!":function(R){R.advance();},
+  // unconditional multi-jump
+  ".":function(R){var g=R.stack.pop();while(g-->0){R.advance()}},
+  // skip if true, peek
+  "?":function(R){var c=R.stack.pop();if(c)R.advance();R.stack.push(c)},
+  // duplicate
+  ":":Reng.nullaryC(function(R,v){return [v,v]}),
+  // jump if false, mirror if true
+  ";":function(R){if(R.stack[R.stack.length-1])Reng.ops["|"](R);},
+  // one-way "entrances"
+  	// right-one-way
+  	"a":function(R){if(R.dir.x!==1||R.dir.y!==0)Reng.ops["@"](R);},
+  	"b":function(R){if(R.dir.x!==-1||R.dir.y!==0)Reng.ops["@"](R);},
+  	"c":function(R){if(R.dir.x!==0||R.dir.y!==1)Reng.ops["@"](R);},
+  	"d":function(R){if(R.dir.x!==0||R.dir.y!==-1)Reng.ops["@"](R);},
+  // equality
+  "e":Reng.binary(function(R,a,b){return +(a==b);}),
+  // get character
+  "f":Reng.binary(function(R,a,b){return R.getChar(b,a).charCodeAt();}),
+  // place character
+  "g":function(R){var c=R.stack.pop(),b=R.stack.pop(),a=R.stack.pop();R.bound(c,b);R.code[c][b]=String.fromCharCode(a);},
+  // jump back N characters (@.@ )
+  "h":function(R){Reng.ops["@"](R);Reng.ops["."](R);R.advance();Reng.ops["@"](R);},
+  // move 1 from input to main stack
+  "i":Reng.nullary(function(R){return R.input.shift();}),
+  // jump
+  "j":function(R){var y=R.stack.pop(),x=R.stack.pop();R.pos.x=x;R.pos.y=y;R.bound(y,x);},
+  // push input stack length
+  "k":Reng.nullary(function(R){return R.input.length;}),
+  // push stack length
+  "l":Reng.nullary(function(R){return R.stack.length;}),
+  // push # of parent stacks
+  "m":Reng.nullary(function(R){return R.parentStacks.length;}),
+  // output number
+  "n":Reng.dropUse(function(R,v){o.innerHTML+=v;}),
+  // output character
+  "o":Reng.dropUse(function(R,v){o.innerHTML+=String.fromCharCode(v);}),
+  // jump if -1, peek
+  "p":function(R){var c=R.stack.pop();if(c===-1)R.advance();R.stack.push(c)},
+  // jump if true, pop (equiv. ?$)
+  "q":function(R){var c=R.stack.pop();if(c)R.advance();},
+  // reverse stack
+  "r":function(R){R.stack.reverse();},
+  // jump if not -1, peek
+  "s":function(R){var c=R.stack.pop();if(c!==-1)R.advance();R.stack.push(c)},
+  // branch: up if true, down if false
+  "t":function(R){var c=R.stack.pop();if(c)Reng.ops["^"](R);else Reng.ops["v"](R);R.stack.push(c);},
+  "u":Reng.unary(function(R,v){return Math.random()*v|0;}),
+  // quit program
+  "~":function(R){R.running=false;},
+  // drop
+  "$":Reng.dropUse(),
+  // operators
+  "+":Reng.binary(function(R,a,b){return a+b;}),
+  "-":Reng.binary(function(R,a,b){return a-b;}),
+  "*":Reng.binary(function(R,a,b){return a*b;}),
+  "%":Reng.binary(function(R,a,b){return a/b;}),
+  ",":Reng.binary(function(R,a,b){return a%b;}),
+  // exec lambda / negate
+  "`":Reng.unary(function(R,n){return -n;},function(R,l){/*var i = R.stack.push(l);*/l.exec(R);/*R.stack.splice(i-1,1);*/return l;}),
+  "'":function(R){R.stack.sort(function(x,y){return x-y})},
+  // redefine constant
+  "#":function(R){
+  	R.advance();
+    var chr = R.getChar();
+    var val = R.stack.pop();
+    if(val instanceof Reng.lambda) R.ops[chr] = function(R){val.exec(R);}
+    else R.ops[chr] = Reng.constant(val);
+  },
+  // string mode
+  "\"":Reng.mode(2),
+  "{":Reng.mode(3),	// TODO: function mode
+  // pop N, take N elements from stac into a new stack
+  "[":function(R){
+  	var num = R.stack.pop();
+  	var nextStack = R.stack.splice(-num,num);
+    R.parentStacks.push(R.stack);
+    R.stack = nextStack;
+  },
+  // puts parent stack behind current stack
+  "]":function(R){
+  	var parent = R.parentStacks.pop();
+    R.stack = parent.concat(R.stack);
+  },
+  "(":function(R){R.stack.push(R.stack.shift());},
+  ")":function(R){R.stack.unshift(R.stack.pop());},
+  "&":function(R){
+  	var toPop = R.stack.pop();
+    var msg = R.stack.splice(-toPop,toPop).map(function(e){return String.fromCharCode(e);}).join("");
+    if(R.funcs[msg]){
+    	R.funcs[msg](R);
+    }
+	}
+};
+Reng.prototype.reset = function(){
+  this.ops = {};
+  for(i in Reng.ops){
+  	this.ops[i] = Reng.ops[i];
+  }
+}
+Reng.prototype.getChar = function(y,x){
+	return this.code[typeof y==="undefined"?this.pos.y:y][typeof x==="undefined"?this.pos.x:x];
+}
+Reng.prototype.bound = function(y,x){
+	this.maxLen = Math.max(this.maxLen, x);
+  console.log(y,this.code.length);
+  if(y>=this.code.length)
+  while(y-->=this.code.length-1)this.code.push([]);
+  this.code = this.code.map(function(e){while(e.length<this.maxLen)e.push(" ");return e;}.bind(this));
+}
+Reng.prototype.advance = function(){
+	this.pos.x += this.dir.x;
+	this.pos.y += this.dir.y;
+  if(this.pos.x < 0) this.pos.x = this.code[this.pos.y].length-1;
+  if(this.pos.y < 0) this.pos.y = this.code.length-1;
+  if(this.pos.x >= this.maxLen) this.pos.x = 0;
+  if(this.pos.y > this.code.length-1) this.pos.y = 0;
+}
+Reng.prototype.exec = function(chr){
+  chr = chr || this.getChar();
+  if(this.ops[chr]) this.ops[chr](this);
+  else if(/[0-9A-Z]/.test(chr)) this.stack.push(parseInt(chr,36));
+}
+Reng.prototype.step = function(callback){
+	if(!this.running) return false;
+	callback = callback || function(){};
+  switch(this.mode){
+  	case 1:
+    	this.exec();
+      if(!this.running) return false;
+      break;
+    case 2:
+    	if(this.getChar()==="\""){
+      	this.mode = 1;
+ 				break;
+      }
+      this.stack.push(this.getChar().charCodeAt())
+      break;
+    case 3:
+      var chr = this.getChar();
+      if(chr === "}") this.depth--;
+      else if(chr === "{") this.depth++;
+    	if(this.depth === 0){
+      	this.depth = 1;
+      	this.mode = 1;
+        this.stack.push(new Reng.lambda(this.buildFunc));
+        this.buildFunc = "";
+        break;
+      }
+      this.buildFunc += chr;
+      break;
+  }
+  this.advance();
+  callback(this);
+}
+Reng.prototype.display = function(){
+  return JSON.stringify(this.code);
+}
+Reng.prototype.tabulate = function(){
+  if(!document) throw new Error("No document present");
+  var table = document.createElement("table");
+  this.code.forEach(function(e, y){
+    var tr = document.createElement("tr");
+    e.forEach(function(g, x){
+      var td = document.createElement("td");
+      if(x===this.pos.x&&y===this.pos.y) td.classList.add("cur");
+      td.appendChild(document.createTextNode(g));
+      tr.appendChild(td);
+    }.bind(this));
+    table.appendChild(tr);
+  }.bind(this));
+  return table;
+}
+
+var inst = new Reng(document.getElementById("code").value),
+    intervals = [];
+
+function updateDisplay(instance){
+	var dispTable = document.getElementById("dispTable");
+  Array.from(dispTable.children).forEach(function(e){
+  	e.parentNode.removeChild(e);
+  });
+	dispTable.appendChild(instance.tabulate());
+  document.getElementById("stack").innerHTML = "[" + instance.stack.map(function(e){return e.toString();}).join(", ") + "]<br>"+ instance.parentStacks.reverse().map(function(e){return "["+e.join(", ")+"]"}).join("<br>") + "<br>{" + instance.input.join(", ") + "}";
+  instance.parentStacks.reverse();
+}
+s.onclick=function(){
+	inst=new Reng(document.getElementById("code").value);
+  inst.reset();
+  document.getElementById("o").innerHTML="";
+  (document.getElementById("input").value.match(/-?\d+\.?\d*|"(\\.|[^"])*"/g)||[]).forEach(function(e){typeof e!=="undefined"?+e==e?inst.input.push(+e):e.slice(1,-1).split("").forEach(function(j){
+  	inst.input.push(j.charCodeAt());
+  }):""});
+  updateDisplay(inst);
+}
+s.onclick();
+r.onclick=function(){
+	intervals.push(setInterval(function(){
+  	inst.step(updateDisplay);
+  },+document.getElementById("int").value));
+}
+f.onclick=function(){
+	(document.getElementById("input").value.match(/-?\d+\.?\d*|"(\\.|[^"])*"/g)||[]).forEach(function(e){typeof e!=="undefined"?+e==e?inst.input.push(+e):e.slice(1,-1).split("").forEach(function(j){
+  	inst.input.push(j.charCodeAt());
+  }):""});
+  updateDisplay(inst);
+}
+b.onclick=function(){inst.step(updateDisplay)}
+q.onclick=function(){clearInterval(intervals.pop()||-1);}
+</script>
+</body>
+</html>
