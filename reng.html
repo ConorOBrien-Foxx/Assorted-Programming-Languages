@@ -6,7 +6,7 @@
   <style>@import url(https://fonts.googleapis.com/css?family=Cousine:400,400italic,700,700italic);@import url(https://fonts.googleapis.com/css?family=Open+Sans:400,300,300italic,400italic,700,700italic);html,button,input{font-family:"Open Sans",sans-serif;}table{border-collapse:collapse;}td{width:1em;height:1em;border:1px solid #888;padding:5px;text-align:center;}td.cur{background:#edaaaa;}textarea,#o{width:100%;min-height:6em;}#int{width:6ch;}td,textarea,#stack,#o{font-family:"Cousine",monospace;white-space:pre;}h1,h2{margin:0;}</style>
 </head>
 <body>
-<h1>Reng v.2.1</h1>
+<h1>Reng v.3</h1>
 <input id="upload" type="file"><button onclick="upload()">Submit file</button>
 <h2>input</h2>
 <textarea spellcheck="false" id="input"></textarea>
@@ -36,14 +36,6 @@
 </ul></li>
 </ul>
 <script>
-
-function upload(){
-	var fr=new FileReader();
-	fr.onload=function(){document.getElementById("code").value=fr.result};
-	fr.readAsBinaryString(document.getElementById("upload").files[0]);
-}
-
-
 /*
 
 #x	push a token char x
@@ -64,6 +56,12 @@ $	drop
 |/\	mirrors
 
 */
+
+function upload(){
+	var fr=new FileReader();
+	fr.onload=function(){document.getElementById("code").value=fr.result};
+	fr.readAsBinaryString(document.getElementById("upload").files[0]);
+}
 
 function Reng(code){
   this.code = code.split("\n").map(function(e){return e.split("");});
@@ -94,9 +92,10 @@ function Reng(code){
   this.parentStacks = [];
   this.stack = [];      // ugh another stack ;_;
   // popping off of empty stack yields 0
-  this.stack.pop = function(){
+  this.defaultPop = 0;
+  this.stack.pop = function(otherVal){
   	var val = this[this.length-1];
-    if(typeof val==="undefined") val = 0;
+    if(typeof val==="undefined") val = otherVal || 0;
     else this.splice(-1,1);
     return val;
   }
@@ -105,16 +104,19 @@ function Reng(code){
 }
 Reng.dirChange = function(nx,ny){return function(R){R.dir={x:nx,y:ny}}}
 Reng.nullary = function(f){return function(R){R.stack.push(f(R));}}
-Reng.nullaryC = function(f){return function(R){R.stack=R.stack.concat(f(R,R.stack.pop()));}}
-Reng.dropUse = function(f){return function(R){(f||function(){})(R,R.stack.pop());}}
+Reng.nullaryC = function(f){return function(R){R.stack=R.stack.concat(f(R,R.stack.pop(R.defaultPop)));}}
+Reng.dropUse = function(f){return function(R){(f||function(){})(R,R.stack.pop(R.defaultPop));}}
 Reng.unary = function(f,g){
 	return function(R){
-  	var val = R.stack.pop();
+  	var val = R.stack.pop(R.defaultPop);
   	R.stack.push((val instanceof Reng.lambda?g:f)(R,val));
   }
 }
-Reng.binary = function(f,g){return function(R){var top=R.stack.pop(),sec=R.stack.pop();R.stack.push(f(R,sec,top));}}
-Reng.ternary = function(f,g){return function(R){var top=R.stack.pop(),sec=R.stack.pop(),thi=R.stack.pop();R.stack.push(f(R,sec,top,thi));}}
+Reng.binary = function(f,g){return function(R){var top=R.stack.pop(),sec=R.stack.pop(R.defaultPop);
+	top = typeof top==="undefined"?R.defaultPop:top;
+	sec = typeof sec==="undefined"?R.defaultPop:sec;
+	R.stack.push(f(R,sec,top));}}
+Reng.ternary = function(f,g){return function(R){var top=R.stack.pop(R.defaultPop),sec=R.stack.pop(R.defaultPop),thi=R.stack.pop(R.defaultPop);R.stack.push(f(R,sec,top,thi));}}
 Reng.constant = function(v){return function(R){R.stack.push(v);}}
 Reng.mode = function(m){return function(R){R.mode=m;}}
 Reng.lambda = function(code){
@@ -144,13 +146,29 @@ Reng.ops = {
   // unconditional jump
   "!":function(R){R.advance();},
   // unconditional multi-jump
-  ".":function(R){var g=R.stack.pop();while(g-->0){R.advance()}},
+  ".":function(R){var g=R.stack.pop(R.defaultPop);while(g-->0){R.advance()}},
   // skip if true, peek
-  "?":function(R){var c=R.stack.pop();if(c)R.advance();R.stack.push(c)},
+  "?":function(R){var c=R.stack.pop(R.defaultPop);if(c)R.advance();R.stack.push(c)},
   // duplicate
   ":":Reng.nullaryC(function(R,v){return [v,v]}),
   // jump if false, mirror if true
   ";":function(R){if(R.stack[R.stack.length-1])Reng.ops["|"](R);},
+  // pop N (top) and M (sTop): jump M units if N, otherwise, advance
+  "¿":function(R){
+  	var N=R.stack.pop(R.defaultPop);
+    var M=R.stack.pop(R.defaultPop);
+    if(N)while(M-->0)R.advance();
+  },
+  // nicely print a number
+  "æ":Reng.dropUse(function(R,v){o.innerHTML+=v+" ";}),
+  // print newline
+  "ö":function(R){o.innerHTML+="\n";},
+  // duplicate stack
+  "¤":function(R){R.stack=R.stack.concat(R.stack);},
+  // plus or minus
+  "±":function(R){var A=R.stack.pop();A=typeof A==="undefined"?R.defaultPop:A;var B=R.stack.pop();B=typeof B==="undefined"?R.defaultPop:B;R.stack.push(B+A,B-A);},
+  // jump if stack length = 1, mirror otherwise
+  "¡":function(R){if(R.stack.length!==1)Reng.ops["|"](R);},
   // one-way "entrances"
   	// right-one-way
   	"a":function(R){if(R.dir.x!==1||R.dir.y!==0)Reng.ops["@"](R);},
@@ -162,13 +180,13 @@ Reng.ops = {
   // get character
   "f":Reng.binary(function(R,a,b){return R.getChar(b,a).charCodeAt();}),
   // place character
-  "g":function(R){var c=R.stack.pop(),b=R.stack.pop(),a=R.stack.pop();R.bound(c,b);R.code[c][b]=String.fromCharCode(a);},
+  "g":function(R){var c=R.stack.pop(R.defaultPop),b=R.stack.pop(R.defaultPop),a=R.stack.pop(R.defaultPop);R.bound(c,b);R.code[c][b]=String.fromCharCode(a);},
   // jump back N characters (@.@ )
   "h":function(R){Reng.ops["@"](R);Reng.ops["."](R);R.advance();Reng.ops["@"](R);},
   // move 1 from input to main stack
   "i":Reng.nullary(function(R){return R.input.shift();}),
   // jump
-  "j":function(R){var y=R.stack.pop(),x=R.stack.pop();R.pos.x=x;R.pos.y=y;R.bound(y,x);},
+  "j":function(R){var y=R.stack.pop(R.defaultPop),x=R.stack.pop(R.defaultPop);R.pos.x=x;R.pos.y=y;R.bound(y,x);},
   // push input stack length
   "k":Reng.nullary(function(R){return R.input.length;}),
   // push stack length
@@ -180,15 +198,15 @@ Reng.ops = {
   // output character
   "o":Reng.dropUse(function(R,v){o.innerHTML+=String.fromCharCode(v);}),
   // jump if -1, peek
-  "p":function(R){var c=R.stack.pop();if(c===-1)R.advance();R.stack.push(c)},
+  "p":function(R){var c=R.stack.pop(R.defaultPop);if(c===-1)R.advance();R.stack.push(c)},
   // jump if true, pop (equiv. ?$)
-  "q":function(R){var c=R.stack.pop();if(c)R.advance();},
+  "q":function(R){var c=R.stack.pop(R.defaultPop);if(c)R.advance();},
   // reverse stack
   "r":function(R){R.stack.reverse();},
   // jump if not -1, peek
-  "s":function(R){var c=R.stack.pop();if(c!==-1)R.advance();R.stack.push(c)},
+  "s":function(R){var c=R.stack.pop(R.defaultPop);if(c!==-1)R.advance();R.stack.push(c)},
   // branch: up if true, down if false
-  "t":function(R){var c=R.stack.pop();if(c)Reng.ops["^"](R);else Reng.ops["v"](R);R.stack.push(c);},
+  "t":function(R){var c=R.stack.pop(R.defaultPop);if(c)Reng.ops["^"](R);else Reng.ops["v"](R);R.stack.push(c);},
   "u":Reng.unary(function(R,v){return Math.random()*v|0;}),
   // quit program
   "~":function(R){R.running=false;},
@@ -207,7 +225,7 @@ Reng.ops = {
   "#":function(R){
   	R.advance();
     var chr = R.getChar();
-    var val = R.stack.pop();
+    var val = R.stack.pop(R.defaultPop);
     if(val instanceof Reng.lambda) R.ops[chr] = function(R){val.exec(R);}
     else R.ops[chr] = Reng.constant(val);
   },
@@ -216,25 +234,28 @@ Reng.ops = {
   "{":Reng.mode(3),	// TODO: function mode
   // pop N, take N elements from stac into a new stack
   "[":function(R){
-  	var num = R.stack.pop();
+  	var num = R.stack.pop(R.defaultPop);
   	var nextStack = R.stack.splice(-num,num);
     R.parentStacks.push(R.stack);
     R.stack = nextStack;
   },
   // puts parent stack behind current stack
   "]":function(R){
-  	var parent = R.parentStacks.pop();
+  	var parent = R.parentStacks.pop(R.defaultPop);
     R.stack = parent.concat(R.stack);
   },
-  "(":function(R){R.stack.push(R.stack.shift());},
-  ")":function(R){R.stack.unshift(R.stack.pop());},
+  "(":function(R){R.stack.push(R.stack.shift()||R.defaultPop);},
+  ")":function(R){R.stack.unshift(R.stack.pop(R.defaultPop));},
   "&":function(R){
-  	var toPop = R.stack.pop();
+  	var toPop = R.stack.pop(R.defaultPop);
     var msg = R.stack.splice(-toPop,toPop).map(function(e){return String.fromCharCode(e);}).join("");
     if(R.funcs[msg]){
     	R.funcs[msg](R);
     }
-	}
+	},
+  "¶":Reng.dropUse(function(R,v){
+  	R.defaultPop = v;
+  })
 };
 Reng.prototype.reset = function(){
   this.ops = {};
@@ -247,7 +268,6 @@ Reng.prototype.getChar = function(y,x){
 }
 Reng.prototype.bound = function(y,x){
 	this.maxLen = Math.max(this.maxLen, x);
-  console.log(y,this.code.length);
   if(y>=this.code.length)
   while(y-->=this.code.length-1)this.code.push([]);
   this.code = this.code.map(function(e){while(e.length<this.maxLen)e.push(" ");return e;}.bind(this));
