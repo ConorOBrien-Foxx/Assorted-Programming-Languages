@@ -7,6 +7,7 @@
 </head>
 <body>
 <h1>Reng v.2.1</h1>
+<input id="upload" type="file"><button onclick="upload()">Submit file</button>
 <h2>input</h2>
 <textarea spellcheck="false" id="input"></textarea>
 <button id=f>feed input</button>
@@ -35,6 +36,14 @@
 </ul></li>
 </ul>
 <script>
+
+function upload(){
+	var fr=new FileReader();
+	fr.onload=function(){document.getElementById("code").value=fr.result};
+	fr.readAsBinaryString(document.getElementById("upload").files[0]);
+}
+
+
 /*
 
 #x	push a token char x
