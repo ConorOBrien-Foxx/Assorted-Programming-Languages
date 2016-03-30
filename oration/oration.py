@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys,re
 file = open(sys.argv[1])
 try:
-	if sys.argv[2] == '2':
+	if str(sys.argv[2]) == '2':
 		version=2
 	else:
 		version=3
@@ -13,7 +13,7 @@ to_parse = []
 filler = re.compile(r"\s+(?:um+|alrighty?|sh(?:oo|i)t)\s?(?:[,:]?|(?:[!.?])+)\s*")
 
 def cleanse(string):
-	return re.sub(r"([!.?`]|\.\.\.)$","",string)
+	return string.replace('!','').replace('?','').replace(r'\.','||||||').replace('.','').replace('||||||','.')
 
 def fix_parens(string):
 	level = 0
@@ -38,9 +38,9 @@ for line in file:
 
 def breath_hyper_error(errorcode):
 	print_syntax=(('print(',')'),('print ',''))[version-2]
-	exec printsyntax[0] + errorcode + print_syntax[1]
+	exec(printsyntax[0] + errorcode + print_syntax[1])
 	sys.exit()
-	
+
 
 MAX_BREATH   = 7
 breath       = 7
@@ -60,14 +60,14 @@ for ex in to_parse:
 	if not commented:
 		deduct_breath = True
 		if ex.startswith("we need ") or ex.startswith("i need ") or ex.startswith("you need "):
-			module = ex[7:-1]
+			module = ex[7:]
 			compiled += "import " + module + "\n"
 		elif ex.startswith("to iterate, "):
-			compiled += "while " + ex[12:-1] + ":\n"
+			compiled += "while " + ex[12:] + ":\n"
 			tab_level += 1
 			compiled += "\t" * tab_level
 		elif ex.startswith("now"):
-			compiled += module + "." + ex[4:-1] + "\n"
+			compiled += module + "." + ex[4:ex.index(' ', 4)] + "(" +  ex[ex.index(' ', 4)+1:] + ")" +  "\n"
 		elif ex.startswith("chop"):
 			compiled = compiled[:int(-1*len(ex)/5)]
 		elif ex.startswith("start a "):
@@ -132,8 +132,8 @@ for ex in to_parse:
 
 compiled = fix_parens(compiled)
 
-filename=sys.argv[1].replace('\/','\\')
-filename=filename[filename.rfind('/'):] if filename.rfind('/') != -1 else sys.argv[1]
+filename=str(sys.argv[1]).replace('\/','\\')
+filename=filename[filename.rfind('/'):] if filename.rfind('/') != -1 else str(sys.argv[1])
 filename=filename[:filename.rfind('.or')]
 
 a=open("%s_compiled.py" % filename,"w")
@@ -142,3 +142,4 @@ a.write('#!/usr/bin/env python'+ str(version)+'\n')
 a.write(compiled)
 
 a.close()
+exec(compiled)
