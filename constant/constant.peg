@@ -1,0 +1,61 @@
+Expression
+  = head:Term tail:(_ ("+" / "-") _ Term)* {
+      var result = head, i;
+
+      for (i = 0; i < tail.length; i++) {
+        if (tail[i][1] === "+") { result += tail[i][3]; }
+        if (tail[i][1] === "-") { result -= tail[i][3]; }
+      }
+
+      return result;
+    }
+
+Term
+  = head:Factor tail:(_ ("*" / "/") _ Factor)* {
+      var result = head, i;
+
+      for (i = 0; i < tail.length; i++) {
+        if (tail[i][1] === "*") { result *= tail[i][3]; }
+        if (tail[i][1] === "/") { result /= tail[i][3]; }
+      }
+
+      return result;
+    }
+
+Factor
+  = "(" _ expr:Expression _ ")" { return expr; }
+  / Number
+
+Number "number"
+  = [a-zA-Z_]+ {
+		var val = text().split("");
+		var counter = 0;
+		val.forEach(function(e){
+			switch(e){
+				case "p": counter += Math.PI; break;
+				case "e": counter += Math.E; break;
+				// phi
+				case "P": counter += (1+Math.sqrt(5))/2; break;
+				// pythagorean constant
+				case "R": counter += Math.sqrt(2); break;
+				// conway's constant
+				case "λ": case "l": counter += 1.303577269034; break;
+				// euler-mascheroni constant
+				case "γ": case "g": counter += 0.5772156649015329; break;
+				case "n": counter = -counter; break;
+				case "c": counter = Math.ceil(counter); break;
+				case "f": counter = Math.floor(counter); break;
+				case "r": counter = Math.round(counter); break;
+				case "z": counter = 0; break;
+				case "Z": counter = options.startVal;
+				case "a": options.startVal = counter; break;
+				case "O": alert(counter); break;
+				case "o": alert(String.fromCharCode(counter)); break;
+				case "_": counter = options.lastVal; break;
+			}
+		});
+		return counter;
+	}
+
+_ "whitespace"
+  = [ \t\n\r]*
