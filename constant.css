@@ -1,0 +1,39 @@
+@import url(https://fonts.googleapis.com/css?family=Coda:400,800&subset=latin,latin-ext);
+html {
+	font-family: Coda, Cambria, sans-serif;
+	font-size: 16px;
+	line-height: 27px;
+	background: #324;
+	color: #121212;
+}
+
+h1, h2, h3, h4, h5, h6, th { color: #102; }
+
+#content {
+	width: 850px;
+	background: white;
+	padding: 15px;
+	margin: auto;
+}
+
+code, textarea, input, #output {
+	font-family: Consolas, monospace;
+}
+
+td, th {
+	width: 150px;
+	border-bottom: 1px solid;
+	border-left: 1px solid;
+	text-align: center;
+}
+
+textarea {
+	width: 90%;
+	min-height: 8em;
+}
+
+table {
+	margin: 20px auto;
+}
+
+#output { min-height: 2em; }
