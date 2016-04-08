@@ -19,6 +19,7 @@ Oration is a breath-oriented, syntax-substitution for python. Your program needs
  * `fill me in` - auto completes parenthesis in program (implicitly done at the end of the program).
  * `(carry on|continue)` - adds a close-paren to the source code.
  * `to iterate` - start a while loop
+ * `if` - start a if statement with condition following, automatically appends a `:` so `if x:` is redundant.
 
 ## Breath control
 
