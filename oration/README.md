@@ -27,6 +27,8 @@ Oration is a breath-oriented, syntax-substitution for python. Your program needs
 # Interpreter notes
 When running the interpreter, do this:
 
-    oration "path-to-file"
+    python oration.py "path-to-file"
 
-`oration.py` will make a file called `compiled.txt` that contains the transpiled source code of the most recently run program.
+`oration.py` will make a file called `foo_compiled.py` that contains the transpiled source code of the most recently run program, where `foo` was the name of the `.or` file.  So `python oration.py fibbonacci.or` will produce `fibbonacci_compiled.py`.
+
+On OS X and possibly some linux distros, to be able to run `oration path_to_file`, add `alias oration="python ~/path/to/oration.py" $1`. 
