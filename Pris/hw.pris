@@ -1,0 +1,34 @@
+(]]]((]](       LEFT += 72
+}}}             PRINT LEFT
+(]]][           LEFT += 29
+}}}             PRINT LEFT
+(]]             LEFT += 7
+}}}             PRINT LEFT
+}}}             PRINT LEFT
+(]              LEFT += 3
+}}}             PRINT LEFT
+{               FOCUS RIGHT
+(][][](         RIGHT += 44
+}}}             PRINT RIGHT
+{{              FOCUS LEFT
+}}]]            LEFT -= RIGHT
+}}]]            LEFT -= RIGHT
+(][[            LEFT += 9
+}}}             PRINT LEFT
+(]][]]          LEFT += 55
+}}}             PRINT LEFT
+(][]](          LEFT += 24
+}}}             PRINT LEFT
+(]              LEFT += 3
+}}}             PRINT LEFT
+{               FOCUS RIGHT
+(]]]]](         RIGHT += 64
+}}}             PRINT RIGHT
+{{              FOCUS LEFT
+}}]]            LEFT -= RIGHT
+(][]]][(        LEFT += 94
+}}}             PRINT LEFT
+{               FOCUS RIGHT
+}}]]            LEFT -= RIGHT
+(]][[           RIGHT += 25
+}}}             PRINT RIGHT

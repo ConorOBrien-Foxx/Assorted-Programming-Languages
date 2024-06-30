@@ -1,3 +1,7 @@
+function note(s) {
+  console.log(s);
+}
+
 function numOf(str){
   for(var i=s=0;i<str.length;i++){
     s = str[i]==="]"?s*2+1:str[i]==="["?s*2-1:s+1;
@@ -25,16 +29,16 @@ function Pris(code){
       case "}":
         switch(mode){
           case 1:
-            arr[focus] = prompt.charCodeAt();
+            arr[focus] = prompt().charCodeAt();
             break;
           case 2:
-            arr[focus] = +prompt.charCodeAt();
+            arr[focus] = +prompt();
             break;
           case 3:
-            console.log(out += String.fromCharCode(arr[focus]));
+            note(out += String.fromCharCode(arr[focus]));
             break;
           case 4:
-            console.log(out += arr[focus]);
+            note(out += arr[focus]);
             break;
           case 5:
             if(arr[focus]) i++;
@@ -63,12 +67,40 @@ function Pris(code){
           case 13:
             arr[focus]--;
             break;
+          case 14:
+            alert(out);
+            out = "";
           default:
-            console.log(mode);
+            process.stderr.write(mode + "\n");
             break;
         }
         break;
     }
   }
-  return arr;
+  return { out, arr };
+}
+
+if(typeof require !== "undefined") {
+  if(require.main === module) {
+    const fs = require("fs");
+    prompt = require("prompt-sync")();
+    alert = console.log;
+    note = () => {};
+    code = process.argv[2];
+    if(process.argv[3] === "n") {
+      note = s => process.stderr.write(`NOTE: ${s}\n`);
+    }
+    try {
+      code = fs.readFileSync(code).toString();
+    }
+    catch {}
+    let res = Pris(code);
+    note(JSON.stringify(res.arr));
+    if(res.out) {
+      alert(res.out);
+    }
+  }
+  else {
+    module.exports = Pris;
+  }
 }
